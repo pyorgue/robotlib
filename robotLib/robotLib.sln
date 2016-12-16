@@ -1,0 +1,54 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "robotLib", "robotLib\robotLib.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Example", "Example", "{0CAA9B6E-AC71-416C-9D29-D17A3DA20F04}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "motion", "motion\motion.vcxproj", "{A398F45B-456C-4A21-B1B2-B2B3DAB8F140}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sound", "sound\sound.vcxproj", "{6149B251-598C-4F07-BE00-78702DDAA173}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "looks", "looks\looks.vcxproj", "{6064F74D-B746-4F41-B294-1770C781CAE4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sensing", "sensing\sensing.vcxproj", "{69263642-0F3B-4777-9428-3C508A72309A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|Win32.Build.0 = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|Win32.ActiveCfg = Release|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|Win32.Build.0 = Release|Win32
+		{A398F45B-456C-4A21-B1B2-B2B3DAB8F140}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A398F45B-456C-4A21-B1B2-B2B3DAB8F140}.Debug|Win32.Build.0 = Debug|Win32
+		{A398F45B-456C-4A21-B1B2-B2B3DAB8F140}.Release|Win32.ActiveCfg = Release|Win32
+		{A398F45B-456C-4A21-B1B2-B2B3DAB8F140}.Release|Win32.Build.0 = Release|Win32
+		{6149B251-598C-4F07-BE00-78702DDAA173}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6149B251-598C-4F07-BE00-78702DDAA173}.Debug|Win32.Build.0 = Debug|Win32
+		{6149B251-598C-4F07-BE00-78702DDAA173}.Release|Win32.ActiveCfg = Release|Win32
+		{6149B251-598C-4F07-BE00-78702DDAA173}.Release|Win32.Build.0 = Release|Win32
+		{6064F74D-B746-4F41-B294-1770C781CAE4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6064F74D-B746-4F41-B294-1770C781CAE4}.Debug|Win32.Build.0 = Debug|Win32
+		{6064F74D-B746-4F41-B294-1770C781CAE4}.Release|Win32.ActiveCfg = Release|Win32
+		{6064F74D-B746-4F41-B294-1770C781CAE4}.Release|Win32.Build.0 = Release|Win32
+		{69263642-0F3B-4777-9428-3C508A72309A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{69263642-0F3B-4777-9428-3C508A72309A}.Debug|Win32.Build.0 = Debug|Win32
+		{69263642-0F3B-4777-9428-3C508A72309A}.Release|Win32.ActiveCfg = Release|Win32
+		{69263642-0F3B-4777-9428-3C508A72309A}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A398F45B-456C-4A21-B1B2-B2B3DAB8F140} = {0CAA9B6E-AC71-416C-9D29-D17A3DA20F04}
+		{6149B251-598C-4F07-BE00-78702DDAA173} = {0CAA9B6E-AC71-416C-9D29-D17A3DA20F04}
+		{6064F74D-B746-4F41-B294-1770C781CAE4} = {0CAA9B6E-AC71-416C-9D29-D17A3DA20F04}
+		{69263642-0F3B-4777-9428-3C508A72309A} = {0CAA9B6E-AC71-416C-9D29-D17A3DA20F04}
+	EndGlobalSection
+EndGlobal
