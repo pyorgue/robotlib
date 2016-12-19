@@ -65,7 +65,7 @@ Weels::Weels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speed
 }
 
 void Weels::turnRight(int milisecond){
-	stop();
+	//stop();
 	digitalWrite(_dirMotorRight, LOW); // direction = backward
 	digitalWrite(_speedMotorRight, HIGH); // TODO speed
 	digitalWrite(_dirMotorLeft, HIGH); // direction = forward
@@ -75,7 +75,7 @@ void Weels::turnRight(int milisecond){
 
 }
 void Weels::turnLeft(int milisecond){
-	stop();
+	//stop();
 	digitalWrite(_dirMotorRight, HIGH); // direction = forward
 	digitalWrite(_speedMotorRight, LOW); 
 	digitalWrite(_dirMotorLeft, LOW); // direction = backward
@@ -85,7 +85,7 @@ void Weels::turnLeft(int milisecond){
 }
 
 void Weels::moveForward(){
-	stop();
+	//stop();
 	digitalWrite(_dirMotorRight, HIGH); // direction = forward
 	digitalWrite(_speedMotorRight, LOW); // TODO speed
 	digitalWrite(_dirMotorLeft, HIGH); // direction = forward
@@ -99,7 +99,7 @@ void Weels::moveForward(int milisecond){
 }
 
 void Weels::moveBackward(){
-	stop();
+	//stop();
 	digitalWrite(_dirMotorRight, LOW); // direction = backward
 	digitalWrite(_speedMotorRight, HIGH);
 	digitalWrite(_dirMotorLeft, LOW); // direction = backward
@@ -121,6 +121,6 @@ void Weels::stop(int delayMs){
 }
 
 void Weels::stop(){
-	stop(500);
+	stop(100);
 
 }

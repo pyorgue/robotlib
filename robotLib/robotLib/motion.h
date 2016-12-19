@@ -19,13 +19,13 @@ public:
 	void turnRight();
 	void turnLeft();
 	void turnCenter();
+  void turn(int angle);
 private:
 	int _pin;
 	Servo *_servo;
 	int _turnInterval;
 	int _position;
 	bool _reversed;
-	void turn(int angle);
 };
 
 class Weels{
