@@ -1,6 +1,7 @@
 /*
  *  MR Robot 0.1
- *  TODO 
+ *  TODO
+ *  - error calc first distance in the log
  *  - keep track of previous decision de avoid going at the same place again
  *  - externalize communication into the lib
  *  - evolve dto to add information type
@@ -10,7 +11,6 @@
  */ 
 
 #include <SPI.h>
-#include "RF24.h"
 #include <Servo.h>
 #include <LiquidCrystal.h>
 #include "sensing.h"
@@ -56,58 +56,48 @@ const int ANGLE_WINDOW = 20;
 const int DISTANCE_STOP = 40;
 const int DISTANCE_NOGO = 40;
 
-/*********** Modules initialisation *************************/
-Neck          robotNeck(NECK_PIN, true, 5);
-Buzzer        buzzer(SONG_PIN);
-UltraSonicEye soni(TRIGGER_PIN, ECHO_PIN);
-Weels         weels(PIN_A_IB, PIN_A_IA, PIN_B_IB, PIN_B_IA);
-RF24          radio(RADIO_CE_PIN, RADIO_CSN_PIN);
-FlashingLight lightGreen(GREEN_PIN, 200);
-Light         lightRed(RED_PIN);
-
-/****************** Communication stuctur ***********************/
-typedef struct dataStruct{
-	unsigned long _micros;
-	int distance;
-} RobotData;
+/*********** Modules  *************************/
+Neck          *robotNeck;
+Buzzer        *buzzer;
+UltraSonicEye *soni;
+Weels         *weels;
+RadioCom      *radio;
+FlashingLight *lightGreen;
+Light         *lightRed;
 
 /*********** Arduino Setup  *********************************/
 void setup() {
 	printf_begin();
 	Serial.begin(SERIAL_BAUD);
+  Serial.print("Setup robot\n");
   checkMode();
 
-	/*********** Radio stuff **********/
-	// TODO put that in the lib
-	Serial.print("init radio\n");
-	radio.begin();
+  // init all parts
+  Serial.print("Setup neck\n");
+  robotNeck = new Neck(NECK_PIN, true, 5);
+  robotNeck->attach();
+  
+  Serial.print("Setup buzzer\n");
+  buzzer = new Buzzer(SONG_PIN);
 
-	// Set the PA Level low to prevent power supply related issues RF24_PA_MAX is default.
-	radio.setPALevel(RF24_PA_LOW);
+  Serial.print("Setup eye front\n");
+  soni = new UltraSonicEye(TRIGGER_PIN, ECHO_PIN);
 
-	// Enable auto acknowledgement
-	radio.setAutoAck(true);
+  Serial.print("Setup weels\n");
+  weels = new Weels(PIN_A_IB, PIN_A_IA, PIN_B_IB, PIN_B_IA);
 
-	// set delay and number of retry (250 microseconds, 3 times)
-	radio.setRetries(1, 1);
+  Serial.print("Setup radio output\n");
+  radio = new RadioCom(RADIO_CE_PIN, RADIO_CSN_PIN, pipe);
 
-	// Open a writing and reading pipe on each radio, with opposite addresses
-	radio.openWritingPipe(pipe);
+  Serial.print("Setup green light\n");
+  lightGreen = new FlashingLight(GREEN_PIN, 200);
+  lightGreen->turnOff();
 
-	// print diagnostic (need printf to be initiated)
-	radio.printDetails();
+  Serial.print("Setup red light\n");
+  lightRed = new Light(RED_PIN);
+  lightRed->turnOn();
 
-	// stop listening so we can talk
-	radio.stopListening();
-
-	/*********** End Radio stuff **********/
-
-	// init neck
-	robotNeck.attach();
-
-	//ready
-	lightGreen.turnOff();
-	lightRed.turnOn();
+  Serial.print("Setup complete\n");
 }
 
 void checkMode(){
@@ -158,137 +148,122 @@ void loop() {
 
 void testLoop(){
   // init led
-  lightGreen.turnOn();
-  lightRed.turnOn();
+  lightGreen->turnOn();
+  lightRed->turnOn();
   
   //send a setup message
-  RobotData testData;
-  testData.distance = 0;
-  testData._micros = millis();
-
-  Serial.print("test radio message\n");
-  if (!radio.write(&testData, sizeof(testData))){
-    Serial.println(F("Failed sending setup message "));
-  }
+  radio->sendData(0);
 
   // init neck
   Serial.print("test neck \n");
-  robotNeck.turnRight();
-  robotNeck.turnLeft();
-  robotNeck.turnCenter();
+  robotNeck->turnRight();
+  robotNeck->turnLeft();
+  robotNeck->turnCenter();
 
   // test motor
   Serial.print("test motor fwd\n");
-  weels.moveForward(1000);
+  weels->moveForward(1000);
 
   Serial.print("test motor backward\n");
-  weels.moveBackward(1000);
+  weels->moveBackward(1000);
 
   Serial.print("test motor right\n");
-  weels.turnRight(1000);
+  weels->turnRight(1000);
 
   Serial.print("test motor left\n");
-  weels.turnLeft(1000);
+  weels->turnLeft(1000);
 
   // buzzer test
   Serial.print("test buzzer\n");
   int spiderman[] = { D6, D6, D6, D6, G6, G6, D6, D6, A7, A7, D6, };
-  buzzer.playSound(spiderman, sizeof(spiderman) / sizeof(*spiderman), 150);
+  buzzer->playSound(spiderman, sizeof(spiderman) / sizeof(*spiderman), 150);
 
   // end testing
-  lightGreen.turnOff();
-  lightRed.turnOff();
+  lightGreen->turnOff();
+  lightRed->turnOff();
   delay(6000);
 
 }
 
 void avoidLoop(){
-	lightGreen.update();
-	int distance = soni.look();
+	lightGreen->update();
+	int distance = soni->look();
 
 	//obstacle found
 	if (distance < DISTANCE_STOP){
     //stop the robot
-    weels.stop();
-    lightGreen.turnOff();
-    lightRed.turnOn();
-    buzzer.playUhoh();
-    
-    //send the message TODO put in lib
-		RobotData message;
-		message.distance = distance;
-		message._micros = millis();
-		Serial.println(F("Now sending distance."));
-		printf("Distance = %dcm, time = %ums \n", message.distance, message._micros);
-
-		if (!radio.write(&message, sizeof(message))){
-			Serial.println(F("Failed sending distance"));
-		}
+    weels->stop();
+    lightGreen->turnOff();
+    lightRed->turnOn();
+    buzzer->playUhoh();
+		radio->sendData(distance);
 		Serial.print("Stop\n");
 		
 		//record best distance and best angle window
-    int distances[180/ANGLE_SAMPLE];
-    int bestDistances[180/ANGLE_WINDOW +1];
+    int distances[180/ANGLE_SAMPLE] = {0};
+    int windowDistances[180/ANGLE_SAMPLE] = {0};
     int bestWindow = -1;
     int bestDistance = 0;
+    int samplePerWindow = ANGLE_WINDOW/ANGLE_SAMPLE;
     
     for(int angle=0; angle < 180; angle = angle + ANGLE_SAMPLE){
-      robotNeck.turn(angle);
-      int distance = soni.look();
-      distances[angle / ANGLE_SAMPLE] = distance;
-      int currentWindowNum = angle / ANGLE_WINDOW;
-      if(angle % ANGLE_WINDOW == 0) {
-        bestDistances[currentWindowNum] = 0;
-      }
-      if(distance < DISTANCE_NOGO){
-        bestDistances[currentWindowNum] = -1000;
-      }
-      else {
-        bestDistances[currentWindowNum] = bestDistances[currentWindowNum] + distance;
-        if(bestDistances[currentWindowNum] > bestDistance){
-           bestDistance = bestDistances[currentWindowNum];
-           bestWindow = currentWindowNum;
+      robotNeck->turn(angle);
+      int distance = soni->lookAccuratly(2);
+      int currentAngleNum = angle / ANGLE_SAMPLE;
+      distances[currentAngleNum] = distance;
+      
+      printf("Angle num %d (%d deg) distance %dcm\n", currentAngleNum, angle, distance);
+      for(int i =currentAngleNum -  samplePerWindow/2; i< currentAngleNum +  samplePerWindow/2 +1; i++){
+        if(i<0 || i>= sizeof(windowDistances)){
+          continue;
+        }
+        int adjustedDistance = distance < DISTANCE_NOGO ? -1000 : distance;
+        windowDistances[i] += adjustedDistance;
+        printf("Appends %dcm to window num %d ([%3d , %3d]) deg, total %dcm\n", adjustedDistance, i, (i -  samplePerWindow/2) * ANGLE_SAMPLE, (i +  samplePerWindow/2) * ANGLE_SAMPLE , windowDistances[i]);
+        if(windowDistances[i] > bestDistance){
+           bestDistance = windowDistances[i];
+           bestWindow = i;
+           printf("Best window %d best overall distance %dcm\n", bestWindow, bestDistance);
         }
       }
     }
 
     //TODO if LOG
-    printf("%d\n", bestDistances[0]);
     for(int i = 0; i < sizeof(distances) / sizeof(int) ; i++){
-      printf("Angle %3d deg - Distance %5d cm - Window %8d cm\n", i * ANGLE_SAMPLE, distances[i], bestDistances[(i * ANGLE_SAMPLE)/ANGLE_WINDOW] );
+      printf("Angle %3d deg - Distance %5d cm - Window [%3d , %3d] %8d cm\n", i*ANGLE_SAMPLE , distances[i], (i - samplePerWindow/2) * ANGLE_SAMPLE, (i +  samplePerWindow/2) * ANGLE_SAMPLE, windowDistances[i] );
     }
 
+    printf("best window %d best distance %dcm \n", bestWindow, bestDistance);
     // turn to the middle of the best window
-    if(bestWindow !=-1){
-      int bestAngle = bestWindow * ANGLE_WINDOW + ANGLE_WINDOW / 2  ;
-      robotNeck.turn(bestAngle);
+    if(bestWindow !=-1 && windowDistances[bestWindow] > 0){
+      int bestAngle = bestWindow * ANGLE_SAMPLE;
+      robotNeck->turn(bestAngle);
       printf("Turn %d deg\n", bestAngle);
       if(bestAngle < 90) {
-        weels.moveBackward(300);
-        weels.turnLeft((90 - bestAngle) * 10);
+        weels->moveBackward(300);
+        weels->turnLeft((90 - bestAngle) * 10);
       }
       else if(bestAngle >= 90) {
-        weels.moveBackward(300);
-        weels.turnRight((bestAngle - 90) * 10);
+        weels->moveBackward(300);
+        weels->turnRight((bestAngle - 90) * 10);
       }
     } else {
       //u turn
       Serial.println(F("U turn."));
-      robotNeck.turnCenter();
+      robotNeck->turnCenter();
 
-      weels.moveBackward(300);
-      weels.turnLeft(900);
+      weels->moveBackward(300);
+      weels->turnLeft(900);
     }
-    robotNeck.turnCenter();
+    robotNeck->turnCenter();
 
-		distance = soni.lookAccuratly();
+		distance = soni->lookAccuratly(5);
 		//bonne distance
 		if (distance > DISTANCE_STOP){
 			Serial.print("Move Forward\n");
-      lightGreen.turnOn();
-      lightRed.turnOff();
-			weels.moveForward();
-			
+      lightGreen->turnOn();
+      lightRed->turnOff();
+			weels->moveForward();
 		}
 	}
 }
