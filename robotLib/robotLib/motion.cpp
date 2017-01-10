@@ -72,8 +72,38 @@ void Weels::turnRight(int milisecond){
 	digitalWrite(_speedMotorLeft, LOW); // TODO speed
 	delay(milisecond);
 	stop();
-
 }
+
+void Weels::turnRightAngle(int angle, volatile unsigned int& counter){
+  counter = 0;
+  int holeAngle = 18;
+  digitalWrite(_dirMotorRight, LOW); // direction = backward
+  digitalWrite(_speedMotorRight, HIGH); // TODO speed
+  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
+  digitalWrite(_speedMotorLeft, LOW); // TODO speed
+  while(counter * holeAngle / 2 < angle){
+    printf("Waiting - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
+  }
+  hardStop();
+  printf("After stop - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
+  counter = 0;
+}
+
+void Weels::turnLeftAngle(int angle, volatile unsigned int& counter){
+  counter = 0;
+  int holeAngle = 18;
+  digitalWrite(_dirMotorRight, HIGH); // direction = forward
+  digitalWrite(_speedMotorRight, LOW); 
+  digitalWrite(_dirMotorLeft, LOW); // direction = backward
+  digitalWrite(_speedMotorLeft, HIGH);
+  while(counter * holeAngle / 2 < angle){
+    printf("Waiting - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
+  }
+  hardStop();
+  printf("After stop - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
+  counter = 0;
+}
+
 void Weels::turnLeft(int milisecond){
 	//stop();
 	digitalWrite(_dirMotorRight, HIGH); // direction = forward
@@ -122,5 +152,12 @@ void Weels::stop(int delayMs){
 
 void Weels::stop(){
 	stop(100);
-
 }
+
+void Weels::hardStop(){
+  digitalWrite(_dirMotorRight, HIGH);
+  digitalWrite(_speedMotorRight, HIGH);
+  digitalWrite(_dirMotorLeft, HIGH);
+  digitalWrite(_speedMotorLeft, HIGH);
+}
+

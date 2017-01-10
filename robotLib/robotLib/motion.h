@@ -32,6 +32,8 @@ class Weels{
 public:
 	Weels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft);
 	void turnRight(int milisecond);
+  void turnRightAngle(int angle, volatile unsigned int& counter);
+  void turnLeftAngle(int angle, volatile unsigned int& counter);
 	void turnLeft(int milisecond);
 	void moveForward(int milisecond);
 	void moveForward();
@@ -39,6 +41,7 @@ public:
 	void moveBackward();
 	void stop(int delayMs);
 	void stop();
+  void hardStop();
 private:
 	int _dirMotorRight;
 	int _speedMotorRight;

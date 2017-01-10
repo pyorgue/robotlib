@@ -3,7 +3,6 @@
  *  TODO
  *  - error calc first distance in the log
  *  - keep track of previous decision de avoid going at the same place again
- *  - externalize communication into the lib
  *  - evolve dto to add information type
  *  - create log (print f, serial, over radio)
  *  - add possibility de receive message (to change mode for instance)
@@ -21,26 +20,27 @@
 
 
 /*********** Pin definition *******************************/
-int SONG_PIN =        A0;		// piezzo buzzer
-int MODE_POT_PIN =    A1;   // potentiometer used to detect mode
-int PIN_A_IB =        A2;   // direction motor A
-int PIN_A_IA =        A3;		// speed motor A for now just a digital
-int PIN_B_IB =        A4;   // direction motor B
-int PIN_B_IA =        A5;		// speed motor B for now just a digital
-// pin0 not used
-// pin1 not used
-int GREEN_PIN =       2;	  // flashing light green
-int RED_PIN =         3;		// red light
-int TRIGGER_PIN =     4;	  // ultrasonic sensor trigger
-int ECHO_PIN =        5;		// ultrasonic sensor echo
-int NECK_PIN =        6;		// servo motor
-int RADIO_CE_PIN =    7;	  // radio CE
-int RADIO_CSN_PIN =   8;	  // radio 
-//pin9 not used
-//pin10 not used
-int RADIO_MOSI_PIN =  11;   // radio MOSI - not configurable
-int RADIO_MISO_PIN =  12;   // radio MISO - not configurable
-int RADIO_SCK_PIN =   13;   // radio SCK - not configurable
+#define SONG_PIN         A0		// piezzo buzzer
+#define MODE_POT_PIN     A1   // potentiometer used to detect mode
+#define PIN_A_IB         A2   // direction motor A
+#define PIN_A_IA         A3		// speed motor A for now just a digital
+#define PIN_B_IB         A4   // direction motor B
+#define PIN_B_IA         A5		// speed motor B for now just a digital
+// pin0 not used (Serial RX)
+// pin1 not used (Serial TX)
+#define SPEED_SENS_INT   INT0 // pin2 used as interupt(INT0)
+#define SPEED_SENS_PIN   2    // pin2 speed sensor
+// pin3 not used (INT1)
+#define TRIGGER_PIN      4	  // ultrasonic sensor trigger
+#define ECHO_PIN         5		// ultrasonic sensor echo
+#define NECK_PIN         6		// servo motor
+#define RADIO_CE_PIN     7	  // radio CE
+#define RADIO_CSN_PIN    8	  // radio 
+#define GREEN_PIN        9    // flashing light green
+#define RED_PIN          10    // red light
+#define RADIO_MOSI_PIN   11   // radio MOSI - not configurable
+#define RADIO_MISO_PIN   12   // radio MISO - not configurable
+#define RADIO_SCK_PIN    13   // radio SCK - not configurable
 
 /********** Config  *****************************************/
 enum modeEnum {
@@ -65,14 +65,29 @@ RadioCom      *radio;
 FlashingLight *lightGreen;
 Light         *lightRed;
 
+/*************** Speed counter *****************************/
+static volatile unsigned int counter=0;
+static volatile unsigned long debounce = 0; // Rebound time.
+void docount()  // counts from the speed sensor
+{
+  if(digitalRead(SPEED_SENS_PIN) && (micros() - debounce> 500) && digitalRead (SPEED_SENS_PIN)){
+    debounce = micros();
+    counter++;  // increase +1 the counter value
+  }
+} 
+
 /*********** Arduino Setup  *********************************/
 void setup() {
 	printf_begin();
 	Serial.begin(SERIAL_BAUD);
+    
   Serial.print("Setup robot\n");
   checkMode();
 
   // init all parts
+  Serial.print("Init speed sensor on interupt 0\n");
+  attachInterrupt(SPEED_SENS_INT, docount, RISING);
+
   Serial.print("Setup neck\n");
   robotNeck = new Neck(NECK_PIN, true, 5);
   robotNeck->attach();
@@ -241,11 +256,13 @@ void avoidLoop(){
       printf("Turn %d deg\n", bestAngle);
       if(bestAngle < 90) {
         weels->moveBackward(300);
-        weels->turnLeft((90 - bestAngle) * 10);
+        //weels->turnLeft((90 - bestAngle) * 10/2);
+        weels->turnLeftAngle(90 - bestAngle, counter);
       }
       else if(bestAngle >= 90) {
         weels->moveBackward(300);
-        weels->turnRight((bestAngle - 90) * 10);
+        //weels->turnRight((bestAngle - 90) * 10/2);
+        weels->turnRightAngle(bestAngle - 90, counter);
       }
     } else {
       //u turn
@@ -253,7 +270,8 @@ void avoidLoop(){
       robotNeck->turnCenter();
 
       weels->moveBackward(300);
-      weels->turnLeft(900);
+      //weels->turnLeft(900/2);
+      weels->turnRightAngle(270, counter);
     }
     robotNeck->turnCenter();
 
