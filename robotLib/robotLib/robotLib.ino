@@ -1,6 +1,8 @@
 /*
  *  MR Robot 0.1
  *  TODO
+ *  - change movement detection using interupt
+ *  - add posibility of moving a certain distances (multiple wheel turn)
  *  - error calc first distance in the log
  *  - keep track of previous decision de avoid going at the same place again
  *  - evolve dto to add information type
@@ -9,15 +11,12 @@
  *  - change motor speed (need to change pin)
  */ 
 
-#include <SPI.h>
-#include <Servo.h>
-#include <LiquidCrystal.h>
+#include "stdinclude.h"
 #include "sensing.h"
 #include "sound.h"
 #include "motion.h"
 #include "looks.h"
-#include "printf.h"
-
+#include <printf.h>
 
 /*********** Pin definition *******************************/
 #define SONG_PIN         A0		// piezzo buzzer
@@ -43,16 +42,12 @@
 #define RADIO_SCK_PIN    13   // radio SCK - not configurable
 
 /********** Config  *****************************************/
-enum modeEnum {
-  TEST,
-  AVOID,
-  WAIT
-  };
+
 const long SERIAL_BAUD = 115200;
 const uint64_t pipe = 0xABCDABCD71LL;
-modeEnum mode = WAIT;
-const int ANGLE_SAMPLE = 5; 
-const int ANGLE_WINDOW = 20;
+ModeEnum mode = WAIT;
+const int ANGLE_SAMPLE = 10; 
+const int ANGLE_WINDOW = 30;
 const int DISTANCE_STOP = 40;
 const int DISTANCE_NOGO = 40;
 
@@ -60,33 +55,46 @@ const int DISTANCE_NOGO = 40;
 Neck          *robotNeck;
 Buzzer        *buzzer;
 UltraSonicEye *soni;
-Weels         *weels;
+Wheels         *wheels;
 RadioCom      *radio;
 FlashingLight *lightGreen;
 Light         *lightRed;
 
 /*************** Speed counter *****************************/
-static volatile unsigned int counter=0;
+static volatile unsigned int speedCounter=0;
 static volatile unsigned long debounce = 0; // Rebound time.
-void docount()  // counts from the speed sensor
+static volatile unsigned long lastCheckTime = 0;
+static volatile unsigned long lastCheckCounter = 0;
+static bool moveForward = false;
+
+void doCountSpeedSensor()  // counts from the speed sensor
 {
   if(digitalRead(SPEED_SENS_PIN) && (micros() - debounce> 500) && digitalRead (SPEED_SENS_PIN)){
     debounce = micros();
-    counter++;  // increase +1 the counter value
+    speedCounter++;  // increase +1 the counter value
   }
 } 
 
+const char* getModeName(ModeEnum mode){
+	switch (mode)
+	{
+	case AVOID: return "Avoid";
+	case TEST: return "Test";
+	case WAIT: return "Wait";
+	}
+}
+
 /*********** Arduino Setup  *********************************/
 void setup() {
-	printf_begin();
-	Serial.begin(SERIAL_BAUD);
+    printf_begin();
+    Serial.begin(SERIAL_BAUD);
     
   Serial.print("Setup robot\n");
   checkMode();
 
   // init all parts
   Serial.print("Init speed sensor on interupt 0\n");
-  attachInterrupt(SPEED_SENS_INT, docount, RISING);
+  attachInterrupt(SPEED_SENS_INT, doCountSpeedSensor, RISING);
 
   Serial.print("Setup neck\n");
   robotNeck = new Neck(NECK_PIN, true, 5);
@@ -98,8 +106,8 @@ void setup() {
   Serial.print("Setup eye front\n");
   soni = new UltraSonicEye(TRIGGER_PIN, ECHO_PIN);
 
-  Serial.print("Setup weels\n");
-  weels = new Weels(PIN_A_IB, PIN_A_IA, PIN_B_IB, PIN_B_IA);
+  Serial.print("Setup wheels\n");
+  wheels = new Wheels(PIN_A_IB, PIN_A_IA, PIN_B_IB, PIN_B_IA, 20);
 
   Serial.print("Setup radio output\n");
   radio = new RadioCom(RADIO_CE_PIN, RADIO_CSN_PIN, pipe);
@@ -115,9 +123,10 @@ void setup() {
   Serial.print("Setup complete\n");
 }
 
+
 void checkMode(){
   long potValue = analogRead(MODE_POT_PIN);
-  modeEnum previousMode = mode;
+  ModeEnum previousMode = mode;
   
   mode = AVOID;
   if(potValue < 330){
@@ -132,18 +141,8 @@ void checkMode(){
   }
 
   if(previousMode != mode){
-    printf("Changing mode from %s to %s\n", getModeName(previousMode), getModeName(mode));
+	printf("Changing mode from %s to %s\n", getModeName(previousMode), getModeName(mode));
   }
-}
-
-const char* getModeName(modeEnum mode) 
-{
-   switch (mode) 
-   {
-      case AVOID: return "Avoid";
-      case TEST: return "Test";
-      case WAIT: return "Wait";
-   }
 }
 
 /*********** Arduino Loop  *********************************/
@@ -177,16 +176,16 @@ void testLoop(){
 
   // test motor
   Serial.print("test motor fwd\n");
-  weels->moveForward(1000);
+  wheels->moveForward(1000);
 
   Serial.print("test motor backward\n");
-  weels->moveBackward(1000);
+  wheels->moveBackward(1000);
 
   Serial.print("test motor right\n");
-  weels->turnRight(1000);
+  wheels->turnRight(1000);
 
   Serial.print("test motor left\n");
-  weels->turnLeft(1000);
+  wheels->turnLeft(1000);
 
   // buzzer test
   Serial.print("test buzzer\n");
@@ -201,20 +200,23 @@ void testLoop(){
 }
 
 void avoidLoop(){
-	lightGreen->update();
-	int distance = soni->look();
 
-	//obstacle found
-	if (distance < DISTANCE_STOP){
+  // new distance check
+    lightGreen->update();
+    int distance = soni->look();
+
+    //obstacle found
+    if (distance < DISTANCE_STOP){
     //stop the robot
-    weels->stop();
+    wheels->hardStop();
+    moveForward = false;
     lightGreen->turnOff();
     lightRed->turnOn();
     buzzer->playUhoh();
-		radio->sendData(distance);
-		Serial.print("Stop\n");
-		
-		//record best distance and best angle window
+        radio->sendData(distance);
+        Serial.print("Stop\n");
+        
+        //record best distance and best angle window
     int distances[180/ANGLE_SAMPLE] = {0};
     int windowDistances[180/ANGLE_SAMPLE] = {0};
     int bestWindow = -1;
@@ -228,7 +230,7 @@ void avoidLoop(){
       distances[currentAngleNum] = distance;
       
       printf("Angle num %d (%d deg) distance %dcm\n", currentAngleNum, angle, distance);
-      for(int i =currentAngleNum -  samplePerWindow/2; i< currentAngleNum +  samplePerWindow/2 +1; i++){
+      for(int i =currentAngleNum -  samplePerWindow/2; i< currentAngleNum + samplePerWindow/2 +1; i++){
         if(i<0 || i>= sizeof(windowDistances)){
           continue;
         }
@@ -255,34 +257,64 @@ void avoidLoop(){
       robotNeck->turn(bestAngle);
       printf("Turn %d deg\n", bestAngle);
       if(bestAngle < 90) {
-        weels->moveBackward(300);
-        //weels->turnLeft((90 - bestAngle) * 10/2);
-        weels->turnLeftAngle(90 - bestAngle, counter);
+        wheels->moveBackward(300);
+        if (!wheels->turnLeftAngle(90 - bestAngle, speedCounter)){
+          unBlock();
+        }
       }
       else if(bestAngle >= 90) {
-        weels->moveBackward(300);
-        //weels->turnRight((bestAngle - 90) * 10/2);
-        weels->turnRightAngle(bestAngle - 90, counter);
+        wheels->moveBackward(300);
+        if(!wheels->turnRightAngle(bestAngle - 90, speedCounter)){
+          unBlock();
+        }
       }
     } else {
       //u turn
       Serial.println(F("U turn."));
       robotNeck->turnCenter();
 
-      weels->moveBackward(300);
-      //weels->turnLeft(900/2);
-      weels->turnRightAngle(270, counter);
+      wheels->moveBackward(300);
+      wheels->turnRightAngle(270, speedCounter);
     }
     robotNeck->turnCenter();
 
-		distance = soni->lookAccuratly(5);
-		//bonne distance
-		if (distance > DISTANCE_STOP){
-			Serial.print("Move Forward\n");
+        distance = soni->lookAccuratly(5);
+        //bonne distance
+        if (distance > DISTANCE_STOP){
+            Serial.print("Move Forward\n");
       lightGreen->turnOn();
       lightRed->turnOff();
-			weels->moveForward();
-		}
-	}
+            wheels->moveForward();
+      lastCheckTime = millis();
+      lastCheckCounter = speedCounter;
+      moveForward = true;
+        }
+    }
+
+  // check robot still moving
+  // TODO changing with timer interrupt
+  if(moveForward && millis() - lastCheckTime > 500){
+    if (speedCounter == lastCheckCounter){
+      unBlock();
+    }
+    lastCheckTime = millis();
+    lastCheckCounter = speedCounter;
+  }
 }
+
+void unBlock(){
+  Serial.print("Problem not moving\n");
+  wheels->stop();
+  lightGreen->turnOn();
+  lightRed->turnOn();
+  buzzer->playR2D2();
+  moveForward = false;
+  wheels->moveBackward(400);
+  wheels->turnRightAngle(270, speedCounter);
+  Serial.print("Move Forward\n");
+  lightGreen->turnOn();
+  lightRed->turnOff();
+  wheels->moveForward();
+}
+
 

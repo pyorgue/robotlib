@@ -1,5 +1,5 @@
+#include "stdinclude.h"
 #include "motion.h"
-#include "Servo.h"
 
 // Neck implementation
 Neck::Neck(int pin, bool reversed = false, int turnInterval = 5){
@@ -45,13 +45,15 @@ void Neck::turnCenter(){
 	turn(90);
 }
 
-// Weels implementation (assuming two motor positive in output middle)
+// Wheels implementation (assuming two motor positive in output middle)
 
-Weels::Weels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft){
+Wheels::Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft, int speedSensorHoles){
 	_dirMotorRight = dirMotorRight;
 	_speedMotorRight = speedMotorRight;
 	_dirMotorLeft = dirMotorLeft;
 	_speedMotorLeft = speedMotorLeft;
+ _speedSensorHoles = speedSensorHoles;
+ _speedSensorAngles = 360 / speedSensorHoles;
 
 	// init motor A
 	pinMode(_dirMotorRight, OUTPUT);
@@ -64,85 +66,91 @@ Weels::Weels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speed
 	stop(0);
 }
 
-void Weels::turnRight(int milisecond){
-	//stop();
-	digitalWrite(_dirMotorRight, LOW); // direction = backward
-	digitalWrite(_speedMotorRight, HIGH); // TODO speed
-	digitalWrite(_dirMotorLeft, HIGH); // direction = forward
-	digitalWrite(_speedMotorLeft, LOW); // TODO speed
-	delay(milisecond);
-	stop();
-}
-
-void Weels::turnRightAngle(int angle, volatile unsigned int& counter){
-  counter = 0;
-  int holeAngle = 18;
-  digitalWrite(_dirMotorRight, LOW); // direction = backward
-  digitalWrite(_speedMotorRight, HIGH); // TODO speed
-  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
-  digitalWrite(_speedMotorLeft, LOW); // TODO speed
-  while(counter * holeAngle / 2 < angle){
-    printf("Waiting - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
-  }
-  hardStop();
-  printf("After stop - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
-  counter = 0;
-}
-
-void Weels::turnLeftAngle(int angle, volatile unsigned int& counter){
-  counter = 0;
-  int holeAngle = 18;
+void Wheels::_turnLeft(){
   digitalWrite(_dirMotorRight, HIGH); // direction = forward
   digitalWrite(_speedMotorRight, LOW); 
   digitalWrite(_dirMotorLeft, LOW); // direction = backward
   digitalWrite(_speedMotorLeft, HIGH);
-  while(counter * holeAngle / 2 < angle){
-    printf("Waiting - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
-  }
-  hardStop();
-  printf("After stop - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * holeAngle, counter);
-  counter = 0;
 }
 
-void Weels::turnLeft(int milisecond){
-	//stop();
-	digitalWrite(_dirMotorRight, HIGH); // direction = forward
-	digitalWrite(_speedMotorRight, LOW); 
-	digitalWrite(_dirMotorLeft, LOW); // direction = backward
-	digitalWrite(_speedMotorLeft, HIGH);
+void Wheels::_turnRight(){
+  digitalWrite(_dirMotorRight, LOW); // direction = backward
+  digitalWrite(_speedMotorRight, HIGH); // TODO speed
+  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
+  digitalWrite(_speedMotorLeft, LOW); // TODO speed
+}
+
+void Wheels::moveForward(){
+  digitalWrite(_dirMotorRight, HIGH); // direction = forward
+  digitalWrite(_speedMotorRight, LOW); // TODO speed
+  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
+  digitalWrite(_speedMotorLeft, LOW); 
+}
+
+void Wheels::moveBackward(){
+  digitalWrite(_dirMotorRight, LOW); // direction = backward
+  digitalWrite(_speedMotorRight, HIGH);
+  digitalWrite(_dirMotorLeft, LOW); // direction = backward
+  digitalWrite(_speedMotorLeft, HIGH);
+}
+
+void Wheels::turnRight(int milisecond){
+	_turnRight();
 	delay(milisecond);
 	stop();
 }
 
-void Weels::moveForward(){
-	//stop();
-	digitalWrite(_dirMotorRight, HIGH); // direction = forward
-	digitalWrite(_speedMotorRight, LOW); // TODO speed
-	digitalWrite(_dirMotorLeft, HIGH); // direction = forward
-	digitalWrite(_speedMotorLeft, LOW); 
+bool Wheels::_turnAngle(int angle, volatile unsigned int& counter){
+  counter = 0;
+  unsigned long timeWhenLastUpdate = millis();
+  int lastCounter = 0;
+  while(counter * _speedSensorAngles / 2 < angle){
+    unsigned long newCheck = millis();
+    if(lastCounter != counter){
+      lastCounter = counter;
+      timeWhenLastUpdate = newCheck;
+      printf("Waiting - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * _speedSensorAngles, counter);
+    } else if(newCheck - timeWhenLastUpdate > 2000){
+      hardStop();
+      printf("Can't trurn - angle wanted = %d, current angle = %d, counter = %d, last check = %lu, new check = %lu \n", angle, counter * _speedSensorAngles, counter);
+      return false;
+    }
+  }
+  hardStop();
+  printf("After stop - angle wanted = %d, current angle = %d, counter = %d\n", angle, counter * _speedSensorAngles, counter);
+  counter = 0;
+  return true;
 }
 
-void Weels::moveForward(int milisecond){
+bool Wheels::turnRightAngle(int angle, volatile unsigned int& counter){
+  _turnRight();
+  return _turnAngle(angle, counter);
+}
+
+bool Wheels::turnLeftAngle(int angle, volatile unsigned int& counter){
+  _turnLeft();
+  return _turnAngle(angle, counter);
+}
+
+void Wheels::turnLeft(int milisecond){
+	_turnLeft();
+	delay(milisecond);
+	stop();
+}
+
+void Wheels::moveForward(int milisecond){
 	moveForward();
 	delay(milisecond);
 	stop();
 }
 
-void Weels::moveBackward(){
-	//stop();
-	digitalWrite(_dirMotorRight, LOW); // direction = backward
-	digitalWrite(_speedMotorRight, HIGH);
-	digitalWrite(_dirMotorLeft, LOW); // direction = backward
-	digitalWrite(_speedMotorLeft, HIGH);
-}
-
-void Weels::moveBackward(int milisecond){
+void Wheels::moveBackward(int milisecond){
 	moveBackward();
 	delay(milisecond);
 	stop();
 }
 
-void Weels::stop(int delayMs){
+void Wheels::stop(int delayMs){
 	digitalWrite(_dirMotorRight, LOW);
 	digitalWrite(_speedMotorRight, LOW);
 	digitalWrite(_dirMotorLeft, LOW);
@@ -150,11 +158,11 @@ void Weels::stop(int delayMs){
 	delay(delayMs);
 }
 
-void Weels::stop(){
+void Wheels::stop(){
 	stop(100);
 }
 
-void Weels::hardStop(){
+void Wheels::hardStop(){
   digitalWrite(_dirMotorRight, HIGH);
   digitalWrite(_speedMotorRight, HIGH);
   digitalWrite(_dirMotorLeft, HIGH);

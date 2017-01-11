@@ -28,12 +28,12 @@ private:
 	bool _reversed;
 };
 
-class Weels{
+class Wheels{
 public:
-	Weels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft);
+	Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft, int speedSensorHoles);
 	void turnRight(int milisecond);
-  void turnRightAngle(int angle, volatile unsigned int& counter);
-  void turnLeftAngle(int angle, volatile unsigned int& counter);
+  bool turnRightAngle(int angle, volatile unsigned int& counter);
+  bool turnLeftAngle(int angle, volatile unsigned int& counter);
 	void turnLeft(int milisecond);
 	void moveForward(int milisecond);
 	void moveForward();
@@ -43,10 +43,15 @@ public:
 	void stop();
   void hardStop();
 private:
+  void _turnLeft();
+  void _turnRight();
+  bool _turnAngle(int angle, volatile unsigned int& counter);
 	int _dirMotorRight;
 	int _speedMotorRight;
 	int _dirMotorLeft;
 	int _speedMotorLeft;
+  unsigned int _speedSensorHoles;
+  unsigned int _speedSensorAngles;
 };
 
 #endif

@@ -1,3 +1,4 @@
+#include "stdinclude.h"
 #include "sound.h"
 
 Buzzer::Buzzer(int pin)

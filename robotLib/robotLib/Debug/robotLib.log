@@ -1,5 +1,5 @@
-﻿Build started 22/10/2016 22:24:39.
-     1>Project "F:\source\arduino\robotLib\robotLib\robotLib.vcxproj" on node 2 (Build target(s)).
+﻿Build started 11/01/2017 22:27:46.
+     1>Project "F:\source\arduino\robotlib\robotLib\robotLib\robotLib.vcxproj" on node 2 (ClCompile target(s)).
      1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.targets(64,5): error MSB4018: The "VCMessage" task failed unexpectedly.
 C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.targets(64,5): error MSB4018: System.FormatException: Index (zero based) must be greater than or equal to zero and less than the size of the argument list.
 C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.targets(64,5): error MSB4018:    at System.Text.StringBuilder.AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args)
@@ -12,8 +12,8 @@ C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.ta
 C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.targets(64,5): error MSB4018:    at Microsoft.Build.CPPTasks.VCMessage.Execute()
 C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.targets(64,5): error MSB4018:    at Microsoft.Build.BackEnd.TaskExecutionHost.Microsoft.Build.BackEnd.ITaskExecutionHost.Execute()
 C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.Cpp.Platform.targets(64,5): error MSB4018:    at Microsoft.Build.BackEnd.TaskBuilder.<ExecuteInstantiatedTask>d__20.MoveNext()
-     1>Done Building Project "F:\source\arduino\robotLib\robotLib\robotLib.vcxproj" (Build target(s)) -- FAILED.
+     1>Done Building Project "F:\source\arduino\robotlib\robotLib\robotLib\robotLib.vcxproj" (ClCompile target(s)) -- FAILED.
 
 Build FAILED.
 
-Time Elapsed 00:00:00
+Time Elapsed 00:00:00.01

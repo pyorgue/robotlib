@@ -1,6 +1,5 @@
+#include "stdinclude.h"
 #include "looks.h"
-#include "Arduino.h"
-#include "LiquidCrystal.h"
 
 
 /* Control Light */
