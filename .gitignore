@@ -1,2 +1,8 @@
 robotLib/robotLib/Debug/*
 robotLib/robotLib/__vm/*
+robotLib/robotLib/Debug/
+robotLib/robotLib/__vm/
+robotLib/robotLib/src/_micro-api/*
+robotLib/robotLib/src/_micro-api/
+robotLib/robotLib/src/_micro-api/libraries/robotLibLib/library.properties
+robotLib/robotLib/src/_micro-api/libraries/robotLibLib/src/robotLibLib.h
