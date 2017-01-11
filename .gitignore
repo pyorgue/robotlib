@@ -6,3 +6,5 @@ robotLib/robotLib/src/_micro-api/*
 robotLib/robotLib/src/_micro-api/
 robotLib/robotLib/src/_micro-api/libraries/robotLibLib/library.properties
 robotLib/robotLib/src/_micro-api/libraries/robotLibLib/src/robotLibLib.h
+robotLib/robotLib.v12.suo
+robotLib/robotLib/robotLib.vcxproj
