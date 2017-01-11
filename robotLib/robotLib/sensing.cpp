@@ -1,5 +1,6 @@
+#include <NewPing.h>
 #include "sensing.h"
-#include "NewPing.h"
+
 
 /**
  * \brief Build an ultrasonic eye
