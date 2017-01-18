@@ -47,13 +47,14 @@ void Neck::turnCenter(){
 
 // Wheels implementation (assuming two motor positive in output middle)
 
-Wheels::Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft, int speedSensorHoles){
+Wheels::Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft, unsigned int speedSensorHoles, unsigned int wheelPerimeterCm){
 	_dirMotorRight = dirMotorRight;
 	_speedMotorRight = speedMotorRight;
 	_dirMotorLeft = dirMotorLeft;
 	_speedMotorLeft = speedMotorLeft;
- _speedSensorHoles = speedSensorHoles;
- _speedSensorAngles = 360 / speedSensorHoles;
+  _speedSensorHoles = speedSensorHoles;
+  _speedSensorAngles = 360 / speedSensorHoles;
+  _wheelPerimeterCm = wheelPerimeterCm;
 
 	// init motor A
 	pinMode(_dirMotorRight, OUTPUT);
@@ -64,40 +65,6 @@ Wheels::Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int spe
 	pinMode(_speedMotorLeft, OUTPUT);
 
 	stop(0);
-}
-
-void Wheels::_turnLeft(){
-  digitalWrite(_dirMotorRight, HIGH); // direction = forward
-  digitalWrite(_speedMotorRight, LOW); 
-  digitalWrite(_dirMotorLeft, LOW); // direction = backward
-  digitalWrite(_speedMotorLeft, HIGH);
-}
-
-void Wheels::_turnRight(){
-  digitalWrite(_dirMotorRight, LOW); // direction = backward
-  digitalWrite(_speedMotorRight, HIGH); // TODO speed
-  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
-  digitalWrite(_speedMotorLeft, LOW); // TODO speed
-}
-
-void Wheels::moveForward(){
-  digitalWrite(_dirMotorRight, HIGH); // direction = forward
-  digitalWrite(_speedMotorRight, LOW); // TODO speed
-  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
-  digitalWrite(_speedMotorLeft, LOW); 
-}
-
-void Wheels::moveBackward(){
-  digitalWrite(_dirMotorRight, LOW); // direction = backward
-  digitalWrite(_speedMotorRight, HIGH);
-  digitalWrite(_dirMotorLeft, LOW); // direction = backward
-  digitalWrite(_speedMotorLeft, HIGH);
-}
-
-void Wheels::turnRight(int milisecond){
-	_turnRight();
-	delay(milisecond);
-	stop();
 }
 
 bool Wheels::_turnAngle(int angle, volatile unsigned int& counter){
@@ -122,6 +89,26 @@ bool Wheels::_turnAngle(int angle, volatile unsigned int& counter){
   return true;
 }
 
+void Wheels::_turnLeft(){
+  digitalWrite(_dirMotorRight, HIGH); // direction = forward
+  digitalWrite(_speedMotorRight, LOW); 
+  digitalWrite(_dirMotorLeft, LOW); // direction = backward
+  digitalWrite(_speedMotorLeft, HIGH);
+}
+
+void Wheels::_turnRight(){
+  digitalWrite(_dirMotorRight, LOW); // direction = backward
+  digitalWrite(_speedMotorRight, HIGH); // TODO speed
+  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
+  digitalWrite(_speedMotorLeft, LOW); // TODO speed
+}
+
+void Wheels::turnRight(int milisecond){
+	_turnRight();
+	delay(milisecond);
+	stop();
+}
+
 bool Wheels::turnRightAngle(int angle, volatile unsigned int& counter){
   _turnRight();
   return _turnAngle(angle, counter);
@@ -138,16 +125,71 @@ void Wheels::turnLeft(int milisecond){
 	stop();
 }
 
+
+float Wheels::_calcDistance(unsigned int counter){
+  return float(counter * _speedSensorAngles)/360.0 * float(_wheelPerimeterCm);
+}
+  
+bool Wheels::_moveDistanceCm(unsigned int distanceCm, volatile unsigned int& counter){
+  counter = 0;
+  unsigned long timeWhenLastUpdate = millis();
+  int lastCounter = 0;
+  float halfDistanceOneHole = _calcDistance(1)/2.0;
+  while((float)distanceCm - _calcDistance(counter) > halfDistanceOneHole){
+    printf(int(float(distanceCm) - _calcDistance(counter)) *10);
+    printf(int(halfDistanceOneHole) *10);
+    unsigned long newCheck = millis();
+    if(lastCounter != counter){
+      lastCounter = counter;
+      timeWhenLastUpdate = newCheck;
+      printf("Waiting - distance wanted (mm) = %d, current distance = %d, counter = %d\n", distanceCm * 10, int(_calcDistance(counter) * 10), counter);
+    } else if(newCheck - timeWhenLastUpdate > 2000){
+      hardStop();
+      printf("Can't move - distance wanted = %d, current distance = %d, counter = %d, last check = %lu, new check = %lu \n", distanceCm, int(_calcDistance(counter) * 10), counter);
+      return false;
+    }
+  }
+  printf("Before stop - distance wanted (mm) = %d, current distance = %d, counter = %d\n", distanceCm * 10 , int(_calcDistance(counter) * 10), counter);
+  hardStop();
+  printf("After stop - distance wanted (mm) = %d, current distance = %d, counter = %d\n", distanceCm * 10, int(_calcDistance(counter) *10) , counter);
+  counter = 0;  
+  return true;
+}
+
+void Wheels::moveForward(){
+  digitalWrite(_dirMotorRight, HIGH); // direction = forward
+  digitalWrite(_speedMotorRight, LOW); // TODO speed
+  digitalWrite(_dirMotorLeft, HIGH); // direction = forward
+  digitalWrite(_speedMotorLeft, LOW); 
+}
+
 void Wheels::moveForward(int milisecond){
 	moveForward();
 	delay(milisecond);
 	stop();
 }
 
+bool Wheels::moveForward(unsigned int distanceCm, volatile unsigned int& counter){
+  moveForward();
+  return _moveDistanceCm(distanceCm, counter);
+}
+
+void Wheels::moveBackward(){
+  digitalWrite(_dirMotorRight, LOW); // direction = backward
+  digitalWrite(_speedMotorRight, HIGH);
+  digitalWrite(_dirMotorLeft, LOW); // direction = backward
+  digitalWrite(_speedMotorLeft, HIGH);
+}
+
 void Wheels::moveBackward(int milisecond){
 	moveBackward();
 	delay(milisecond);
 	stop();
+}
+
+bool Wheels::moveBackward(unsigned int distanceCm, volatile unsigned int& counter){
+  moveBackward();
+  return _moveDistanceCm(distanceCm, counter);
 }
 
 void Wheels::stop(int delayMs){

@@ -29,29 +29,36 @@ private:
 };
 
 class Wheels{
+  
 public:
-	Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft, int speedSensorHoles);
+	Wheels(int dirMotorRight, int speedMotorRight, int dirMotorLeft, int speedMotorLeft, unsigned int speedSensorHoles, unsigned int wheelPerimeterCm);
 	void turnRight(int milisecond);
   bool turnRightAngle(int angle, volatile unsigned int& counter);
+  void turnLeft(int milisecond);
   bool turnLeftAngle(int angle, volatile unsigned int& counter);
-	void turnLeft(int milisecond);
 	void moveForward(int milisecond);
+  bool moveForward(unsigned int distanceCm, volatile unsigned int& counter);
 	void moveForward();
 	void moveBackward(int milisecond);
+  bool moveBackward(unsigned int distanceCm, volatile unsigned int& counter);
 	void moveBackward();
 	void stop(int delayMs);
 	void stop();
   void hardStop();
+  
 private:
   void _turnLeft();
   void _turnRight();
   bool _turnAngle(int angle, volatile unsigned int& counter);
+  bool _moveDistanceCm(unsigned int distanceCm, volatile unsigned int& counter);
 	int _dirMotorRight;
 	int _speedMotorRight;
 	int _dirMotorLeft;
 	int _speedMotorLeft;
   unsigned int _speedSensorHoles;
   unsigned int _speedSensorAngles;
+  unsigned int _wheelPerimeterCm;
+  float Wheels::_calcDistance(unsigned int counter);
 };
 
 #endif
