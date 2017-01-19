@@ -136,8 +136,6 @@ bool Wheels::_moveDistanceCm(unsigned int distanceCm, volatile unsigned int& cou
   int lastCounter = 0;
   float halfDistanceOneHole = _calcDistance(1)/2.0;
   while((float)distanceCm - _calcDistance(counter) > halfDistanceOneHole){
-    printf(int(float(distanceCm) - _calcDistance(counter)) *10);
-    printf(int(halfDistanceOneHole) *10);
     unsigned long newCheck = millis();
     if(lastCounter != counter){
       lastCounter = counter;

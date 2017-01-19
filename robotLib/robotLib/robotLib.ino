@@ -162,9 +162,6 @@ void loop() {
 }
 
 void testLoop(){
-  wheels->stop(2000);
-  wheels->moveForward(10, speedCounter);
-  return;
   
   // init led
   lightGreen->turnOn();
